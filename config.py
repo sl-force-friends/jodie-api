@@ -8,6 +8,7 @@ from pydantic import BaseModel
 # Constants
 GPT3 = "gpt-35-turbo-16k"
 GPT4 = "gpt-4-32k"
+MIXTRAL = "mixtral-8x7b-32768"
 
 # Input data model for the fastapi endpoints
 class JDRequest(BaseModel):
@@ -19,6 +20,7 @@ class JDRequest(BaseModel):
     """
     job_title: str
     job_description: str
+    groq: bool = True
 
 # API Key
 API_KEY = os.getenv("API_KEY")
@@ -27,3 +29,6 @@ API_KEY = os.getenv("API_KEY")
 AZURE_API_KEY = os.getenv("JODIE_API_KEY")
 AZURE_API_VER = "2024-02-15-preview"
 AZURE_ENDPOINT = os.getenv("JODIE_ENDPOINT")
+
+# Groq API Key
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")

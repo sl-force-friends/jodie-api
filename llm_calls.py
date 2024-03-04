@@ -5,6 +5,7 @@ from typing import Any, Generator
 
 import chromadb
 import instructor
+from groq import Groq
 from openai import AzureOpenAI
 
 from config import (
@@ -12,7 +13,9 @@ from config import (
     AZURE_API_VER,
     AZURE_ENDPOINT,
     GPT3,
-    GPT4
+    GPT4,
+    GROQ_API_KEY,
+    MIXTRAL
     )
 
 from response_models import (
@@ -40,6 +43,8 @@ client = AzureOpenAI(api_key=AZURE_API_KEY,
 instructor_client = instructor.patch(AzureOpenAI(api_key=AZURE_API_KEY,
                                                  azure_endpoint=AZURE_ENDPOINT,
                                                  api_version=AZURE_API_VER))
+
+groq_client = Groq(api_key=GROQ_API_KEY)
 
 def is_bad_input(job_title: str, job_description: str) -> int:
     """
@@ -110,26 +115,43 @@ def check_jd_negative_content(job_description: str) -> dict[str, bool]:
     return results
 
 def generate_job_design_suggestions(job_title: str,
-                               job_description: str) -> Generator[Any, Any, Any]:
+                                    job_description: str,
+                                    groq:bool) -> Generator[Any, Any, Any]:
     """
     Generates job design suggestions based on the job description.
     """
     doc_extracts = _get_relevant_chunks(job_title, job_description)
     prompt = generate_job_design_rag_prompt(job_title, job_description, doc_extracts)
-    results = _stream_chat_completion(model=GPT4,
-                                      system_message=PROVIDE_JOB_DESIGN_SUGGESTIONS,
-                                      prompt=prompt,
-                                      stream=True)
+    if groq:
+        results = _stream_chat_completion(model=MIXTRAL,
+                                  system_message=PROVIDE_JOB_DESIGN_SUGGESTIONS,
+                                  prompt=prompt,
+                                  api_client=groq_client,
+                                  stream=True)
+    else:
+        results = _stream_chat_completion(model=GPT4,
+                                        system_message=PROVIDE_JOB_DESIGN_SUGGESTIONS,
+                                        prompt=prompt,
+                                        stream=True)
     for result in results:
         yield result
 
 def generate_ai_jd(job_title: str,
-              job_description: str) -> Generator[Any, Any, Any]:
+                   job_description: str,
+                   groq:bool) -> Generator[Any, Any, Any]:
     """
     Rewrites the job description based on the job title.
     """
     prompt = generate_job_posting_prompt(job_title, job_description)
-    results = _stream_chat_completion(model=GPT4,
+    if groq:
+        results = _stream_chat_completion(model=MIXTRAL,
+                                  system_message=REWRITE_JOB_DESC,
+                                  prompt=prompt,
+                                  api_client=groq_client,
+                                  stream=True)
+
+    else: 
+        results = _stream_chat_completion(model=GPT4,
                                       system_message=REWRITE_JOB_DESC,
                                       prompt=prompt,
                                       stream=True)
